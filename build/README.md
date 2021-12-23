@@ -9,9 +9,24 @@ eg: podman pull quay.io/odsci/ods-ci:latest
 # Build the container (optional if you dont want to use the latest from quay.io/odsci)
 $ podman build -t ods-ci:master -f build/Dockerfile .
 
+# create the output directory
+$ mkdir -p $PWD/test-output
+
 # Mount a file volume to provide a test-variables.yml file at runtime
 # Mount a volume to preserve the test run artifacts
-$ podman run --rm -v $PWD/test-variables.yml:/tmp/ods-ci/test-variables.yml:Z -v $PWD/test-output:/tmp/ods-ci/test-output:Z ods-ci:master
+# Run all tests
+$ podman run --rm \
+    -v $PWD/test-variables.yml:/tmp/ods-ci/test-variables.yml:Z \
+    -v $PWD/test-output:/tmp/ods-ci/test-output:Z \
+    ods-ci:master
+
+# Run a single test
+$ podman run --rm \
+    -v $PWD/test-variables.yml:/tmp/ods-ci/test-variables.yml:Z \
+    -v $PWD/test-output:/tmp/ods-ci/test-output:Z \
+    -e RUN_SCRIPT_ARGS='--test-case tests/Tests/500__jupyterhub/test-jupyterlab-git-notebook.robot'  \
+    ods-ci:master
+
 ```
 
 ### Running the ods-ci container image in OpenShift
@@ -20,5 +35,5 @@ After building the container, you can deploy the container in a pod running on O
 
 ```
 # Creates a Secret with test variables that can be mounted in ODS-CI container
-oc create secret generic ods-ci-test-variables --from-file test-variables.yml
+$ oc create secret generic ods-ci-test-variables --from-file test-variables.yml
 ```
