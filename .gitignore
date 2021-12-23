@@ -16,3 +16,4 @@ __pycache__/
 robocop.log
 oc
 kubeconfig
+htpasswd.txt
