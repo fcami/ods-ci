@@ -17,6 +17,7 @@ curl -L ${oc_url} \
 
 # Build the container (optional if you dont want to use the latest from quay.io/odsci)
 podman build -t ods-ci:master -f build/Dockerfile .
+podman build -t ods-ci:v2 -f build/Dockerfile .
 
 # create the output directory
 $ mkdir -p $PWD/test-output
@@ -62,71 +63,44 @@ $ oc create secret generic ods-ci-test-variables --from-file test-variables.yml
 ```
 
 
-### creating many loadtest users in OpenShift
+### creating many loadtest users in podman
 
 ```
-
-bash launch.many.sh
+bash launch.many.podman.sh
 ```
 
+## OpenShift.
 
-<!--
+### Push the image to quay
+
 ```bash
-oc get secrets htpasswd-secret -n openshift-config
+podman login quay.io
+podman tag localhost/ods-ci:master quay.io/egranger/ods-ci:v1
+podman push                        quay.io/egranger/ods-ci:v1
+podman tag localhost/ods-ci:v2 quay.io/egranger/ods-ci:v2
+podman push                    quay.io/egranger/ods-ci:v2
+```
 
-htpasswd -c htpasswd.txt userone
+### Create project in openshift
 
+```
+oc create ns loadtest
 
-podman run --rm -it \
-    -v $PWD/user01.yml:/tmp/ods-ci/test-variables.yml:Z \
-    -v $PWD/test-output:/tmp/ods-ci/test-output:Z \
-    -v $PWD/kubeconfig:/tmp/.kube/config:Z \
-    -e RUN_SCRIPT_ARGS='--test-case tests/Tests/500__jupyterhub/test-jupyterlab-git-notebook.robot'  \
-    ods-ci:master
+```
 
+#### create secret
 
-
-
-htpasswd -c -B -b htpasswd.txt admin-loadtest P@ss-loadtest123
-for i in {001..100};
-do
-   htpasswd  -B -b htpasswd.txt fakeuser$i fakepass
-done
-
-
-
-function fakeuser(){
-    mkdir -p ./test-output/fakeuser$1
-    cp ./test-variables.yml ./test-output/fakeuser$1/var.yml
-    cp ./kubeconfig ./test-output/fakeuser$1/kubeconfig
-    export fake="fakeuser${1}"
-    echo $fake
-    yq e -i '
-        .TEST_USER.USERNAME = strenv(fake)  |
-        .TEST_USER.PASSWORD = "fakepass"
-        ' ./test-output/fakeuser$1/var.yml
-
-    # podman run --rm -d \
-    podman run --rm -it \
-        -v $PWD/test-output/fakeuser$1/var.yml:/tmp/ods-ci/test-variables.yml:Z \
-        -v $PWD/test-output/fakeuser$1:/tmp/ods-ci/test-output:Z \
-        -v $PWD/test-output/fakeuser$1/kubeconfig:/tmp/.kube/config:Z \
-        -e RUN_SCRIPT_ARGS='--test-case tests/Tests/500__jupyterhub/test-jupyterlab-git-notebook.robot'  \
-        ods-ci:master
-
-}
-
-for i in {006..010};
-do
-    fakeuser $i &
-done
+```bash
+oc -n loadtest delete secret ods-ci-test-variables
+oc -n loadtest create secret generic ods-ci-test-variables --from-file test-variables.yml
+```
 
 
+```bash
+oc -n loadtest delete -f ./build/ods-ci.job.yaml ; oc -n loadtest apply -f ./build/ods-ci.job.yaml
 
-for i in {001..005};
-do
-    fakeuser $i
-done
-``` -->
+```
 
+### define x jobs
 
+### keeping the results around

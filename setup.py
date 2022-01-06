@@ -18,7 +18,7 @@ setup(
         "robotframework>=4",
         "robotframework-debuglibrary",
         "robotframework-requests",
-        "robotframework-seleniumlibrary",
+        "robotframework-seleniumlibrary==5.1.3",
         "robotframework-jupyterlibrary>=0.3.1",
         "robotframework-OpenShiftCLI==1.0.1",
         "ipython",

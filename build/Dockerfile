@@ -25,6 +25,7 @@ RUN mkdir $HOME/ods-ci
 WORKDIR $HOME/ods-ci
 
 COPY requirements.txt setup.py .
+RUN python3 -m venv venv && source venv/bin/activate && venv/bin/pip3 install pip==21.3.1
 RUN python3 -m venv venv && source venv/bin/activate && venv/bin/pip3 install -r requirements.txt
 
 COPY tests tests/
