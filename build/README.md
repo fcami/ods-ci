@@ -18,6 +18,7 @@ curl -L ${oc_url} \
 # Build the container (optional if you dont want to use the latest from quay.io/odsci)
 podman build -t ods-ci:master -f build/Dockerfile .
 podman build -t ods-ci:v2 -f build/Dockerfile .
+podman build -t ods-ci:v3 -f build/Dockerfile .
 
 # create the output directory
 $ mkdir -p $PWD/test-output
@@ -44,12 +45,27 @@ $ podman run --rm \
     ods-ci:master
 
 # Run a single test
-$ podman run --rm -it \
+# use the image as-is.
+podman run --rm -it \
     -v $PWD/test-variables.yml:/tmp/ods-ci/test-variables.yml:Z \
     -v $PWD/test-output:/tmp/ods-ci/test-output:Z \
-    -v $PWD/kubeconfig:/tmp/.kube/config:Z \
     -e RUN_SCRIPT_ARGS='--test-case tests/Tests/500__jupyterhub/test-jupyterlab-git-notebook.robot'  \
-    ods-ci:master
+    ods-ci:v3
+
+# a new test I'm working on:
+podman run --rm -it \
+    -v $PWD/test-variables.yml:/tmp/ods-ci/test-variables.yml:Z \
+    -v $PWD/test-output:/tmp/ods-ci/test-output:Z \
+    -e RUN_SCRIPT_ARGS='--test-case tests/Tests/500__jupyterhub/test-jupyterlab-cpu-stresstest.robot'  \
+    ods-ci:v3
+
+# if you want to run a new test without having re-built the image, just mount it:
+podman run --rm -it \
+    -v $PWD/test-variables.yml:/tmp/ods-ci/test-variables.yml:Z \
+    -v $PWD/test-output:/tmp/ods-ci/test-output:Z \
+    -v $PWD/tests/Tests/500__jupyterhub/test-jupyterlab-cpu-stresstest.robot:/tmp/ods-ci/tests/Tests/700/test.robot:Z \
+    -e RUN_SCRIPT_ARGS='--test-case tests/Tests/700/test.robot'  \
+    ods-ci:v3
 
 ```
 
@@ -74,11 +90,9 @@ bash launch.many.podman.sh
 ### Push the image to quay
 
 ```bash
-podman login quay.io
-podman tag localhost/ods-ci:master quay.io/egranger/ods-ci:v1
-podman push                        quay.io/egranger/ods-ci:v1
-podman tag localhost/ods-ci:v2 quay.io/egranger/ods-ci:v2
-podman push                    quay.io/egranger/ods-ci:v2
+## pushing to my own quay repo. but it's public.
+podman tag localhost/ods-ci:v3 quay.io/egranger/ods-ci:v3
+podman push                    quay.io/egranger/ods-ci:v3
 ```
 
 ### Create project in openshift
@@ -92,7 +106,14 @@ oc create ns loadtest
 
 ```bash
 oc -n loadtest delete secret ods-ci-test-variables
-oc -n loadtest create secret generic ods-ci-test-variables --from-file test-variables.yml
+
+## default syntax for default var file:
+oc -n loadtest create secret generic ods-ci-test-variables \
+    --from-file test-variables.yml
+## but if your var file is called something else:
+oc -n loadtest create secret generic ods-ci-test-variables \
+    --from-file=test-variables.yml=perf2-variables.yml
+
 ```
 
 
