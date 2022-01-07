@@ -17,3 +17,5 @@ robocop.log
 oc
 kubeconfig
 htpasswd.txt
+# Ignore any variables file too, just in case.
+*-variables.yml
