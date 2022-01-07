@@ -84,7 +84,7 @@ case "$(uname -s)" in
          echo "setting driver  to $currentpath/Drivers/MACOS"
          PATH=$PATH:$currentpath/drivers/MACOS
          export PATH=$PATH
-         echo "$PATH"
+
          ;;
     Linux)
        case "$(lsb_release --id --short)" in
@@ -93,7 +93,7 @@ case "$(uname -s)" in
              echo "setting driver  to $currentpath/Drivers/fedora"
              PATH=$PATH:$currentpath/drivers/fedora
              export PATH=$PATH
-             echo $PATH
+
         ;;
         "Ubuntu")
              echo "Not yet supported, but shouldn't be hard for you to fix :) "
@@ -113,6 +113,34 @@ case "$(uname -s)" in
           exit 1
         ;;
 esac
+
+## if we have yq installed
+if command -v yq &> /dev/null
+then
+    echo "INFO: we found a yq executable"
+
+    ## get the user, pass and API hostname for OpenShift
+    oc_user=$(yq  e '.OCP_ADMIN_USER.USERNAME' ${TEST_VARIABLES_FILE})
+    oc_pass=$(yq  e '.OCP_ADMIN_USER.PASSWORD' ${TEST_VARIABLES_FILE})
+    oc_host=$(yq  e '.OCP_API_URL' ${TEST_VARIABLES_FILE})
+
+    ## do an oc login here
+    oc login "${oc_host}" --username "${oc_user}" --password "${oc_pass}"
+
+    ## no point in going further if the login is not working
+    retVal=$?
+    if [ $retVal -ne 0 ]; then
+        echo "The oc login command seems to have failed"
+        echo "Please review the content of ${TEST_VARIABLES_FILE}"
+        exit $retVal
+    fi
+    oc cluster-info
+    printf "\nconnected as openshift user ' $(oc whoami) '\n"
+    echo "since the oc login was successful, continuing."
+else
+    echo "we did not find yq, so not trying the oc login"
+fi
+
 
 #TODO: Make this optional so we are not creating/updating the virtualenv everytime we run a test
 VENV_ROOT=${currentpath}/venv
