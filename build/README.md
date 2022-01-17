@@ -16,9 +16,7 @@ curl -L ${oc_url} \
   -o - | tar xf - > ./oc
 
 # Build the container (optional if you dont want to use the latest from quay.io/odsci)
-podman build -t ods-ci:master -f build/Dockerfile .
-podman build -t ods-ci:v2 -f build/Dockerfile .
-podman build -t ods-ci:v3 -f build/Dockerfile .
+podman build -t ods-ci:v4 -f build/Dockerfile .
 
 # create the output directory
 $ mkdir -p $PWD/test-output
@@ -50,14 +48,14 @@ podman run --rm -it \
     -v $PWD/test-variables.yml:/tmp/ods-ci/test-variables.yml:Z \
     -v $PWD/test-output:/tmp/ods-ci/test-output:Z \
     -e RUN_SCRIPT_ARGS='--test-case tests/Tests/500__jupyterhub/test-jupyterlab-git-notebook.robot'  \
-    ods-ci:v3
+    ods-ci:v4
 
 # a new test I'm working on:
 podman run --rm -it \
     -v $PWD/test-variables.yml:/tmp/ods-ci/test-variables.yml:Z \
     -v $PWD/test-output:/tmp/ods-ci/test-output:Z \
     -e RUN_SCRIPT_ARGS='--test-case tests/Tests/500__jupyterhub/test-jupyterlab-cpu-stresstest.robot'  \
-    ods-ci:v3
+    ods-ci:v4
 
 # if you want to run a new test without having re-built the image, just mount it:
 podman run --rm -it \
@@ -65,9 +63,52 @@ podman run --rm -it \
     -v $PWD/test-output:/tmp/ods-ci/test-output:Z \
     -v $PWD/tests/Tests/500__jupyterhub/test-jupyterlab-cpu-stresstest.robot:/tmp/ods-ci/tests/Tests/700/test.robot:Z \
     -e RUN_SCRIPT_ARGS='--test-case tests/Tests/700/test.robot'  \
-    ods-ci:v3
+    ods-ci:v4
+
+# if you want to run a new test without having re-built the image, just mount it:
+podman run --rm -it \
+    -v $PWD/test-variables.yml:/tmp/ods-ci/test-variables.yml:Z \
+    -v $PWD/test-output:/tmp/ods-ci/test-output:Z \
+    -v $PWD/tests/Tests:/tmp/ods-ci/tests/App:Z \
+    -e RUN_SCRIPT_ARGS='--test-case tests/App/500__jupyterhub/test-jupyterlab-cpu-stresstest.robot'  \
+    ods-ci:v5
+
+
+
+
+podman run --rm -it \
+    -v $PWD/test-variables.yml:/tmp/ods-ci/test-variables.yml:Z \
+    -v $PWD/test-output:/tmp/ods-ci/test-output:Z \
+    -v $PWD/tests/Tests/500__jupyterhub/test-jupyterlab-cpu-stresstest.robot:/tmp/ods-ci/tests/Tests/700/test.robot:Z \
+    --env RUN_SCRIPT_ARGS="--extra-robot-args '-i ODS-935'" \
+    ods-ci:v4
+
+podman run --rm -it \
+    --entrypoint "./venv/bin/rebot" \
+    -v $PWD/test-output:/tmp/ods-ci/test-output:Z \
+    ods-ci:v4 \
+    --name Combined \
+    -d test-output/all/ \
+    /tmp/ods-ci/test-output/*/output.xml
+
+    --outputdir /tmp/ods-ci/test-output/all/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ```
+
 
 ### Running the ods-ci container image in OpenShift
 
@@ -91,8 +132,8 @@ bash launch.many.podman.sh
 
 ```bash
 ## pushing to my own quay repo. but it's public.
-podman tag localhost/ods-ci:v3 quay.io/egranger/ods-ci:v3
-podman push                    quay.io/egranger/ods-ci:v3
+podman tag localhost/ods-ci:v4 quay.io/egranger/ods-ci:v4
+podman push                    quay.io/egranger/ods-ci:v4
 ```
 
 ### Create project in openshift
@@ -135,3 +176,7 @@ oc -n loadtest apply -f ./build/ods-ci.job.yaml
 ### keeping the results around
 
 TODO
+
+```bash
+stern -n loadtest ods-ci --since 15s -t -i 'PASS|FAIL' | tail /tmp/loadtest.results.txt
+```
