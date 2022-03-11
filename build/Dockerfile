@@ -1,4 +1,4 @@
-FROM centos:centos8
+FROM centos:stream8
 
 # Use this build arg to set any default test script arguments
 ARG RUN_SCRIPT_ARGS=
