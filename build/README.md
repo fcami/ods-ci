@@ -10,7 +10,7 @@ eg: podman pull quay.io/odsci/ods-ci:latest
 ## get oc from your own cluster
 
 oc_url="$(yq  e '.OCP_CONSOLE_URL' ./test-variables.yml \
-    | sed 's/console\-/downloads\-/g' )amd64/linux/oc.tar" ; echo $oc_url
+    | sed 's/console\-/downloads\-/g' )/amd64/linux/oc.tar" ; echo $oc_url
 
 curl -L ${oc_url} \
   -o - | tar xf - > ./oc
