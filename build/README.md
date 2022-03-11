@@ -12,7 +12,7 @@ eg: podman pull quay.io/odsci/ods-ci:latest
 oc_url="$(yq  e '.OCP_CONSOLE_URL' ./test-variables.yml \
     | sed 's/console\-/downloads\-/g' )/amd64/linux/oc.tar" ; echo $oc_url
 
-curl -L ${oc_url} \
+curl --insecure -L ${oc_url} \
   -o - | tar xf - > ./oc
 
 # Build the container (optional if you dont want to use the latest from quay.io/odsci)
